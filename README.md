@@ -203,6 +203,12 @@ Application Structure 目录结构
         ├── index.js
         ├── store.js              # core code including install, Store
         └── helpers               # helper functions including mapState, mapGetters, mapMutations, mapActions, createNamespacedHelpers
+        └── util.js
+        ├── plugins
+        │   └── logger.js
+        └── module
+            ├── module-collection.js
+            └── module.js
 ```
 
 ### 核心入口文件
@@ -232,3 +238,23 @@ export {
   createNamespacedHelpers
 }
 ```
+
+### store.js
+导出 install 方法
+```js
+function install(_Vue) {
+  Vue = _Vue;
+  Vue.mixin({
+    beforeCreate() {
+      if (this.$options.store) {
+        this.$store = this.$options.store;
+      } else {
+        this.$store = this.$parent && this.$parent.$store;
+      }
+    },
+  })
+}
+```
+> Tip: 内部通过调用 **Vue.mixin()**，为所有组件注入 $store 属性
+
+导出 Store 类

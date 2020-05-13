@@ -69,6 +69,10 @@ export default {
 
   components: {
     TodoItem,
+  },
+
+  mounted() {
+    console.log(this.$store);
   }
 }
 </script>
