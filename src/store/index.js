@@ -9,7 +9,7 @@ export default new Vuex.Store({
       { id: 1, done: false, text: 'Vuex' },
       { id: 2, done: false, text: 'Vue-router' },
       { id: 3, done: false, text: 'Node.js' },
-    ]
+    ],
   },
   getters: {
    doneTodosCount(state) {
@@ -27,5 +27,16 @@ export default new Vuex.Store({
     }
   },
   modules: {
+    a: {
+      namespaced: true,
+      state: {
+        age: 18,
+      },
+      mutations: {
+        aysncIncrement(state, payload) {
+          state.age += payload;
+        }
+      }
+    }
   }
 })

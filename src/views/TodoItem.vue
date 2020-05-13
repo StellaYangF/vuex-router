@@ -26,12 +26,16 @@ export default {
 
 <style scoped>
 .todo {
-  background: #eee;
+  background: #aaa;
   padding: 20px;
   margin: 8px 0;
   transition: all .5s;
   box-shadow: 0 0 10px 0 rgba(0,0,0,.2);
   border-radius: 4px;
+}
+
+.todo.undone:hover {
+  opacity: .8;
 }
 
 .todo.done {
