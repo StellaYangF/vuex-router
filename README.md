@@ -31,7 +31,7 @@ multiple components that share a common state:
 
 
 
-## Usage
+## Implement
 在初始化 store.js 文件时，需要手动注册 **Vuex**，这一步是为了将 **store** 属性注入到每个组件的实例上，可通过 **this.$store.state** 获取共享状态。
 ```js
 import Vue from 'vue'
@@ -189,7 +189,9 @@ const { mapMutations } = createNamespacedHelpers('a')
 }
 ```
 
-## Implement
+除了以上基础用法之外，还有 **plugins**, **registerModule** 属性与 api， 后续的源码分析上会尝试实现。
+
+## Build
 本文主要讲解作者在阅读源码时的心得，以此实现一个简版的 **vuex**
 
 ### 开始构建
