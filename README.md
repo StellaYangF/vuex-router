@@ -195,3 +195,40 @@ const { mapMutations } = createNamespacedHelpers('a')
 本文主要讲解作者在阅读源码时的心得，以此实现一个简版的 **vuex**
 
 ### 开始构建
+Application Structure 目录结构
+
+```sh
+└── vuex
+    └── src
+        ├── index.js
+        ├── store.js              # core code including install, Store
+        └── helpers               # helper functions including mapState, mapGetters, mapMutations, mapActions, createNamespacedHelpers
+```
+
+### 核心入口文件
+导出包含核心代码的对象
+```js
+// index.js
+import { Store, install } from './store';
+import { mapState, mapMutations, mapGetters, mapActions, createNamespacedHelpers } from './helpers';
+
+export default {
+  Store,
+  install,
+  mapState,
+  mapGetters,
+  mapMutations,
+  mapActions,
+  createNamespacedHelpers
+}
+
+export {
+  Store,
+  install,
+  mapState,
+  mapGetters,
+  mapMutations,
+  mapActions,
+  createNamespacedHelpers
+}
+```
