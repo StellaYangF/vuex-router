@@ -1,17 +1,18 @@
 import ModuleCollection from "./module/module-collection";
+import installModule from './module/install-module';
 
 let Vue;
 class Store {
   constructor(options = {}) {
-    // 如果用户没有没有手动注册 Vue.use， 则自动调用
     if (!Vue && typeof Window !== undefined && Window.Vue) {
       install(Vue);
     }
-    const { plugins } = options;
+
+    // 初始化属性
     this.strict = options.strict || false;
     this._committing = false;
     this.vm = new Vue({
-      date: {
+      data: {
         state: options.state,
       },
     });
@@ -20,10 +21,10 @@ class Store {
     this.actions = Object.create(null);
     this.subs = [];
 
+    // 格式化 vuex 数据： modules: { root: { _rawModule: { rootModule }, _children, state } }
     this.modules = new ModuleCollection(options);
+    // 注册 state, getters, mutations, actions
     installModule(this, this.state, [], this.modules.root);
-
-    plugins.forEach((plugin) => plugin(this));
 
     if (this.strict) {
       this.vm.$watch(
@@ -38,8 +39,13 @@ class Store {
       );
     }
 
+    // 插件立即执行
+    // 提供给用户 mutation 改变的钩子函数，扩展逻辑
+    const plugins= options.plugins;
+    plugins.forEach(plugin => plugin(this));
+
   }
-  _widthCommit(fn) {
+  _withCommit(fn) {
     const committing = this._committing;
     this._committing = true;
     fn();
@@ -47,7 +53,7 @@ class Store {
   }
 
   replaceState(newState) {
-    this._widthCommit(() => {
+    this._withCommit(() => {
       this.vm.state = newState;
     })
   }
@@ -57,7 +63,7 @@ class Store {
   }
 
   commit = (type, payload) => {
-    this._widthCommit(() => {
+    this._withCommit(() => {
       this.mutations[type].forEach(fn => fn(payload));
     })
   }
@@ -94,18 +100,4 @@ function install(_Vue) {
   })
 }
 
-function installModule(store, rootState, path, rawModule) {
-  let getters = rawModule._raw.getters;
-}
-
-class ModuleCollection{
-  constructor(options) {
-    this.register([], options);
-  }
-
-  register(path, rootModule) {
-    
-  }
-}
-
-export { Store, install };
+export { Store, install, Vue };

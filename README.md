@@ -127,7 +127,7 @@ import { mapState, mapGetters, mapActions, mapMutations } from 'vuex';
   })
 }
 ```
-可以看到上述的状体映射，调用时可传入 options  对象，属性值有三种形式：
+可以看到上述的状态映射，调用时可传入 options  对象，属性值有三种形式：
 - 箭头函数（简洁）
 - 字符串（别名）
 - normal 函数（this 指向向前组件实例）
@@ -240,7 +240,7 @@ export {
 ```
 
 ### store.js
-导出 install 方法
+**导出 install 方法**
 ```js
 function install(_Vue) {
   Vue = _Vue;
@@ -257,4 +257,271 @@ function install(_Vue) {
 ```
 > Tip: 内部通过调用 **Vue.mixin()**，为所有组件注入 $store 属性
 
-导出 Store 类
+**导出 Store 类**
+Store 数据结构
+```ts
+interface StoreOptions<S> {
+    state?: S | (() => S);
+    getters?: GetterTree<S, S>;
+    actions?: ActionTree<S, S>;
+    mutations?: MutationTree<S>;
+    modules?: ModuleTree<S>;
+    plugins?: Plugin<S>[];
+    strict?: boolean;
+  }
+
+export declare class Store<S> {
+  constructor(options: StoreOptions<S>);
+
+  readonly state: S;
+  readonly getters: any;
+
+  replaceState(state: S): void;
+
+  dispatch: Dispatch;
+  commit: Commit;
+
+  subscribe<P extends MutationPayload>(fn: (mutation: P, state: S) => any): () => void;
+
+  registerModule<T>(path: string, module: Module<T, S>, options?: ModuleOptions): void;
+  registerModule<T>(path: string[], module: Module<T, S>, options?: ModuleOptions): void;
+  
+}
+```
+> Tip: 以上对源码上有一定出入，简化之后有些属性和方法有所删减和改动
+
+依次执行步骤:
+- 脚本引入时，确保 install 方法被调用，先判断是否挂载了全局属性 Vue
+  ```js
+  constructor(options = {}) {
+      if (!Vue && typeof Window !== undefined && Window.Vue) {
+        install(Vue);
+      }
+  }
+  ```
+
+- 构造函数内部先初始化实例属性和方法
+  ```js
+    this.strict = options.strict || false;
+    this._committing = false;
+    this.vm = new Vue({
+      data: {
+        state: options.state,
+      },
+    });
+    this.getters = Object.create(null);
+    this.mutations = Object.create(null);
+    this.actions = Object.create(null);
+    this.subs = [];
+  ```
+  - **getters**: GetterTree 调用 Object.create(null) 创建一个干净的对象，即原型链指向 null，没有原型对象的方法和属性，提高性能
+  ```ts
+  export interface GetterTree<S, R> {
+    [key: string]: Getter<S, R>;
+  }
+  ```
+
+  - **mutations**: MutationTree
+  ```ts
+  export interface MutationTree<S> {
+    [key: string]: Mutation<S>;
+  }
+  ```
+
+  - **actions**: ActionTree
+  ```ts
+  export interface ActionTree<S, R> {
+    [key: string]: Action<S, R>;
+  }
+  ```
+
+  - **modules** 考虑到 state 对象下可能会有多个 modules，创建 ModuleCollection 格式化成想要的数据结构
+  ```ts
+  export interface Module<S, R> {
+    namespaced?: boolean;
+    state?: S | (() => S);
+    getters?: GetterTree<S, R>;
+    actions?: ActionTree<S, R>;
+    mutations?: MutationTree<S>;
+    modules?: ModuleTree<R>;
+  }
+  
+  export interface ModuleTree<R> {
+    [key: string]: Module<any, R>;
+  }
+  ```
+
+  - **get state** **core** 这里进行了依赖收集，将用户传入的 state 变为响应式数据，数据变化触发依赖的页面更新
+  ```js
+  get state() {
+    return this.vm.state;
+  }
+  ```
+
+  - **subscribe** 订阅的事件在每一次 mutation 时发布
+  ```js
+    subscribe(fn) {
+      this.subs.push(fn);
+    }
+  ```
+
+  - **replaceState**
+  ```js
+    replaceState(newState) {
+      this._withCommit(() => {
+        this.vm.state = newState;
+      })
+    }
+  ```
+
+  - **subs** 订阅事件的存储队列
+  - **plugins** 结构为数组，暴露每一次 mutation 的钩子函数。每一个 Vuex 插件仅仅是一个函数，接收 唯一的参数 store，插件功能就是在mutation 调用时增加逻辑，如：
+    - **createLogger**  vuex/dist/logger 修改日志（内置）
+    - **stateSnapShot** 生成状态快照
+    - **persists** 数据持久化
+  ```js
+  const plugins= options.plugins;
+    plugins.forEach(plugin => plugin(this));
+  ```
+
+  - **_committing** boolean 监听异步逻辑是否在 dispatch 调用
+
+  - **_withCommit** 函数接片，劫持mutation（commit） 触发函数。
+  ```js
+  _withCommit(fn) {
+    const committing = this._committing;
+    this._committing = true;
+    fn();
+    this._committing = committing;
+  }
+  ```
+
+  - **strict** 源码中，在严格模式下，会深度监听状态异步逻辑的调用机制是否符合规范
+  > Tip: 生产环境下需要禁用 strict 模式，深度监听会消耗性能
+
+  - **commit**
+  ```js
+  commit = (type, payload) => {
+    this._withCommit(() => {
+      this.mutations[type].forEach(fn => fn(payload));
+    })
+  }
+  ```
+
+  - **dispatch**
+  ```js
+  dispatch = (type, payload) => {
+    this.actions[type].forEach(fn => fn(payload));
+  }
+  ```
+
+  - **registerModule** 动态注册状态模块
+  ```js
+  registerModule(moduleName, module) {
+    this._committing = true;
+    if (!Array.isArray(moduleName)) {
+      moduleName = [moduleName];
+    }
+
+    this.modules.register(moduleName, module);
+    installModule(this, this.state, moduleName, module.rawModule)
+  }
+  ```
+
+- **installModule** 工具方法，注册格式化后的数据，具体表现为: （注册）
+  ```js
+  /**
+   * 
+  * @param {StoreOption} store 状态实例
+  * @param {state} rootState 根状态
+  * @param {Array<String>} path 父子模块名构成的数组
+  * @param {Object} rawModule 当前模块状态对应格式化后的数据：{ state, _raw, _children, state } 其中 _raw 是 options: { namespaced?, state, getter, mutations, actions, modules?, plugins, strict}
+  */
+  function installModule(store, rootState, path, rawModule) {
+    
+    let { getters, mutations, actions } = rawModule._raw;
+    let root = store.modules.root;
+    const namespace = path.reduce((str, currentModuleName) => {
+      // root._raw 对应的就是 当前模块的 option， 根模块没有 namespaced 属性跳过
+      root = root._children[currentModuleName];
+      return str + (root._raw.namespaced ? currentModuleName + '/' : '')
+    }, '');
+
+    // 注册 state
+    if (path.length > 0) {
+      let parentState = path.slice(0, -1).reduce((root, current) => root[current], rootState);
+      // CORE：动态给跟状态添加新属性，需调用 Vue.set API，添加依赖
+      Vue.set(parentState, path[path.length - 1], rawModule.state);
+    }
+
+    // 注册 getters
+    if (getters) {
+      foreach(getters, (type, fn) => Object.defineProperty(store.getters, namespace + type, {
+        get: () => fn(getState(store, path))
+      }))
+    }
+
+    // 注册 mutations
+    if (mutations) {
+      foreach(mutations, (type, fn) => {
+        let arr = store.mutations[namespace + type] || (store.mutations[namespace + type] = []);
+        arr.push(payload => {
+          fn(getState(store, path), payload);
+          // 发布 subscribe 订阅的回调函数
+          store.subs.forEach(sub => sub({
+            type: namespace + type,
+            payload,
+          }, store.state));
+        })
+      })
+    }
+
+    if (actions) {
+      foreach(actions, (type, fn) => {
+        let arr = store.actions[namespace + type] || (store.actions[namespace + type] = []);
+        arr.push(payload => fn(store, payload));
+      })
+    }
+
+    // 递归
+    foreach(rawModule._children, (moduleName, rawModule) => installModule(store, rootState, path.concat(moduleName), rawModule))
+  }
+  ```
+
+- **ModuleCollection** 类结构
+  ```js
+  class ModuleCollection{
+    constructor(options) {
+      this.register([], options);
+    }
+    // rootModule: 为当前模块下的 StoreOption
+    register(path, rootModuleOption) {
+      let rawModule = {
+        _raw: rootModuleOption,
+        _children: Object.create(null),
+        state: rootModuleOption.state
+      }
+      rootModuleOption.rawModule = rawModule;
+
+      if (!this.root) {
+        this.root = rawModule;
+      } else {
+        // 若 modules: a.modules.b => [a, b] => root._children.a._children.b
+        let parentModule = path.slice(0, -1).reduce((root, current) => root._children[current], this.root);
+        parentModule._children[path[path.length - 1]] = rawModule
+      }
+
+      if (rootModuleOption.modules) {
+        foreach(rootModuleOption.modules, (moduleName, moduleOption) => this.register(path.concat(moduleName), moduleOption));
+      }
+    }
+  }
+  ```
+
+- 工具函数
+  - **foreach** 处理对象键值对迭代函数处理
+  - **getState** 同步用户调用 replaceState 后，状态内部的新状态
+  ```js
+  const foreach = (obj, callback) => Object.entries(obj).forEach(([key, value]) => callback(key, value));
+  const getState = (store, path) => path.reduce((newState, current) => newState[current], store.state);
+  ```

@@ -1,8 +1,23 @@
 import Vue from 'vue'
 import Vuex from '../vuex'
-Vue.use(Vuex)
+import _ from 'lodash'
+Vue.use(Vuex);
 
-export default new Vuex.Store({
+const persists = store => {
+  // mock data from server db
+  let local = localStorage.getItem('Vuex:state');
+  if (local) {
+    store.replaceState(JSON.parse(local));
+  }
+  // mock 每一次数据变了之后就往数据库里存数据
+  store.subscribe((mutation, state) =>  localStorage.setItem('Vuex:state', JSON.stringify(state)))
+}
+
+const store =  new Vuex.Store({
+  strict: false,
+  plugins: [
+    persists,
+  ],
   state: {
     todos: [
       { id: 0, done: true, text: 'Vue.js' },
@@ -18,6 +33,7 @@ export default new Vuex.Store({
   },
   mutations: {
     syncTodoDone(state, id) {
+      if (state.todos[id].done) return;
       state.todos.forEach((todo, index) => index===id && (todo.done = true))
     }
   },
@@ -40,3 +56,15 @@ export default new Vuex.Store({
     }
   }
 })
+
+
+store.registerModule('b', {
+  state: 'b',
+  mutations:{
+    syncChangeB(state) {
+      state.b = 'bb';
+    }
+  }
+})
+
+export default store;

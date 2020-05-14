@@ -8,7 +8,7 @@
       :done="todo.done"
      >{{ todo.text }}</TodoItem>
     </ul>
-    <p>age is {{  age}}.</p>
+    <!-- <p>age is {{  age}}.</p> -->
     <button @click='aysncIncrement(1)'>syncIncrement</button>
     <!-- <p>myAge is {{  myAge}}.</p>
     <p>lilyAge is {{  lilyAge}}.</p> -->
@@ -17,7 +17,7 @@
 
 <script>
 import TodoItem from './TodoItem';
-import { mapState, mapMutations } from 'vuex';
+import { mapState, mapMutations } from '../vuex';
 
 export default {
   data() {
@@ -25,10 +25,7 @@ export default {
       tomAge: 1,
     }
   },
-  computed: mapState({
-    todos: "todos",
-    age: state => state.a.age
-  }),
+  computed: mapState(['totos']),
   // {
   //   ...mapState({
   //     todos: state => state.todos,
@@ -72,7 +69,7 @@ export default {
   },
 
   mounted() {
-    console.log(this.$store);
+    // console.log(this.$store);
   }
 }
 </script>
