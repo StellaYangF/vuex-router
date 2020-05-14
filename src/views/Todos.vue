@@ -8,7 +8,7 @@
       :done="todo.done"
      >{{ todo.text }}</TodoItem>
     </ul>
-    <!-- <p>age is {{  age}}.</p> -->
+    <p>age is {{  age}}.</p>
     <button @click='aysncIncrement(1)'>syncIncrement</button>
     <!-- <p>myAge is {{  myAge}}.</p>
     <p>lilyAge is {{  lilyAge}}.</p> -->
@@ -25,7 +25,10 @@ export default {
       tomAge: 1,
     }
   },
-  computed: mapState(['totos']),
+  computed: mapState({
+    todos: "todos",
+    age: state => state.a.age
+  }),
   // {
   //   ...mapState({
   //     todos: state => state.todos,
