@@ -19,23 +19,51 @@ export const mapState = (options) => {
   return obj;
 };
 
-export function mapGetters(options) {
-  
-}
-
-export function mapMutations(namespace, options) {
+export function mapGetters(namespace, options) {
   let obj = Object.create(null);
-  if (Array.isArray(namespace)) options = namespace;
-  namespace = '';
-  options.forEach(mutationName => {
-    obj[mutationName] = function() {
-      debugger;
-      return function(payload) {
-        this.$store.commit(mutationName, payload)
-      }
+  if (Array.isArray(namespace)) {
+    options = namespace;
+    namespace = '';
+  } else {
+    namespace += '/';
+  }
+  options.forEach(getterName => {
+    console.log(getterName)
+    obj[getterName] = function() {
+      return this.$store.getters[namespace + getterName];
     }
   })
   return obj;
 }
 
-export function mapActions() {}
+export function mapMutations(namespace, options) {
+  let obj = Object.create(null);
+  if (Array.isArray(namespace)) {
+    options = namespace;
+    namespace = '';
+  } else {
+    namespace += '/';
+  }
+  options.forEach(mutationName => {
+    obj[mutationName] = function(payload) {
+      return this.$store.commit(namespace + mutationName, payload)
+    }
+  })
+  return obj;
+}
+
+export function mapActions(namespace, options) {
+  let obj = Object.create(null);
+  if (Array.isArray(namespace)) {
+    options = namespace;
+    namespace = '';
+  } else {
+    namespace += '/';
+  }
+  options.forEach(actionName => {
+    obj[actionName] = function(payload) {
+      return this.$store.dispatch(namespace + actionName, payload)
+    }
+  })
+  return obj;
+}

@@ -38,9 +38,7 @@ const store =  new Vuex.Store({
     }
   },
   actions: {
-    asyncChange({commit}, payload) {
-      setTimeout(() => commit('syncChange', payload), 1000);
-    }
+    
   },
   modules: {
     a: {
@@ -48,9 +46,19 @@ const store =  new Vuex.Store({
       state: {
         age: 18,
       },
+      getters: {
+        myAge(state) {
+          return state.age + 1
+        }
+      },
       mutations: {
-        aysncIncrement(state, payload) {
+        syncIncrement(state, payload) {
           state.age += payload;
+        }
+      },
+      actions: {
+        asyncIncrement({commit}, payload) {
+          setTimeout(() => commit('a/syncIncrement', payload), 1000);
         }
       }
     }
