@@ -455,7 +455,7 @@ if (this.strict) {
   }
   ```
 
-##### registerModule** 动态注册状态模块
+##### registerModule 动态注册状态模块
   ```js
   registerModule(moduleName, module) {
     this._committing = true;
