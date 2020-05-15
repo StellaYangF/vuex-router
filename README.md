@@ -1,9 +1,7 @@
-# Vuex | Analysis
-
-## What
+# What
 Vuex 是一个专为 Vue.js 应用程序开发的状态管理模式。它采用集中式存储管理应用的所有组件的状态，并以相应的规则保证状态只能通过可预测的方式改变。[查看官网](https://vuex.vuejs.org/#what-is-vuex)
 
-## Why
+# Why
 多组件共享同一个状态时，会依赖同一状态
 单一数据流无法满足需求：
 - 深度嵌套组件级属性传值，会变得非常麻烦
@@ -25,21 +23,15 @@ multiple components that share a common state:
 
 这里附上文档地址 [Vuex](https://vuex.vuejs.org/installation.html)
 
-
-
-
-
-
-
-## When
+# When
 - 当构建一个大型的 SPA 时
 - 多组件共享一个状态
 
 
-## Implement
+# Implement
 解析源码之前，至少要对 Vuex 非常熟悉，再进一步实现。
 
-### 新建 store 仓库文件
+## 新建 store 仓库文件
 在初始化 store.js 文件时，需要手动注册 **Vuex**，这一步是为了将 **store** 属性注入到每个组件的实例上，可通过 **this.$store.state** 获取共享状态。
 ```js
 import Vue from 'vue'
@@ -96,7 +88,7 @@ export default new Vuex.Store({
 store.state.a.age // -> "18"
 ```
 
-### 组件中使用*
+## 组件中使用
 引入相关映射函数
 ```js
 import { mapState, mapGetters, mapActions, mapMutations } from 'vuex';
@@ -199,10 +191,10 @@ const { mapMutations } = createNamespacedHelpers('a')
 
 除了以上基础用法之外，还有 **plugins**, **registerModule** 属性与 api， 后续的源码分析上会尝试实现。
 
-## Build
+# Build
 接下来开始构建一个简易的 **vuex**
 
-### Application Structure 目录结构
+## Application Structure 目录结构
 
 ```sh
 └── vuex
@@ -218,7 +210,7 @@ const { mapMutations } = createNamespacedHelpers('a')
             └── module.js
 ```
 
-### 核心入口文件
+## 核心入口文件
 导出包含核心代码的对象
 ```js
 // index.js
@@ -246,8 +238,8 @@ export {
 }
 ```
 
-### store.js
-#### 实现 install 方法
+## store.js
+### 实现 install 方法
 ```js
 function install(_Vue) {
   Vue = _Vue;
@@ -264,8 +256,8 @@ function install(_Vue) {
 ```
 > Tip: 内部通过调用 **Vue.mixin()**，为所有组件注入 $store 属性
 
-#### 实现 Store 类
-#### Store 数据结构
+### 实现 Store 类
+### Store 数据结构
 ```ts
 interface StoreOptions<S> {
     state?: S | (() => S);
@@ -307,7 +299,7 @@ export declare class Store<S> {
   }
   ```
 
-##### 构造函数内部先初始化实例属性和方法
+#### 构造函数内部先初始化实例属性和方法
   ```js
     this.strict = options.strict || false;
     this._committing = false;
@@ -321,7 +313,7 @@ export declare class Store<S> {
     this.actions = Object.create(null);
     this.subs = [];
   ```
-##### getters 
+#### getters 
 类型为 GetterTree 调用 **Object.create(null)** 创建一个干净的对象，即原型链指向 null，没有原型对象的方法和属性，提高性能
   ```ts
   export interface GetterTree<S, R> {
@@ -336,7 +328,7 @@ export declare class Store<S> {
   }
   ```
 
-###### actions
+##### actions
 类型为 ActionTree
   ```ts
   export interface ActionTree<S, R> {
@@ -344,7 +336,7 @@ export declare class Store<S> {
   }
   ```
 
-###### modules
+##### modules
 考虑到 state 对象下可能会有多个 modules，创建 **ModuleCollection** 格式化成想要的数据结构
   ```ts
   export interface Module<S, R> {
@@ -361,7 +353,7 @@ export declare class Store<S> {
   }
   ```
 
-###### get state
+##### get state
 **core** 这里进行了依赖收集，将用户传入的 state 变为响应式数据，数据变化触发依赖的页面更新
   ```js
   get state() {
@@ -369,7 +361,7 @@ export declare class Store<S> {
   }
   ```
 
-###### subscribe
+##### subscribe
 订阅的事件在每一次 mutation 时发布
   ```js
     subscribe(fn) {
@@ -386,10 +378,10 @@ export declare class Store<S> {
     }
   ```
 
-###### subs
+##### subs
  订阅事件的存储队列
 
-###### plugins
+##### plugins
   ```js
   const plugins= options.plugins;
     plugins.forEach(plugin => plugin(this));
@@ -410,10 +402,10 @@ export declare class Store<S> {
   }
   ```
 
-###### _committing
+##### _committing
 boolean 监听异步逻辑是否在 dispatch 调用
 
-###### _withCommit
+##### _withCommit
 函数接片，劫持mutation（commit） 触发函数。
   ```js
   _withCommit(fn) {
@@ -424,7 +416,7 @@ boolean 监听异步逻辑是否在 dispatch 调用
   }
   ```
 
-###### strict
+##### strict
 源码中，在严格模式下，会深度监听状态异步逻辑的调用机制是否符合规范
 ```js
 if (this.strict) {
@@ -442,7 +434,7 @@ if (this.strict) {
 ```
 > Tip: 生产环境下需要禁用 strict 模式，深度监听会消耗性能，核心是调用 Vue 的监听函数
 
-###### commit
+##### commit
   ```js
   commit = (type, payload) => {
     this._withCommit(() => {
@@ -451,14 +443,14 @@ if (this.strict) {
   }
   ```
 
-###### dispatch
+##### dispatch
   ```js
   dispatch = (type, payload) => {
     this.actions[type].forEach(fn => fn(payload));
   }
   ```
 
-###### registerModule** 动态注册状态模块
+##### registerModule** 动态注册状态模块
   ```js
   registerModule(moduleName, module) {
     this._committing = true;
@@ -471,7 +463,7 @@ if (this.strict) {
   }
   ```
 
-###### installModule
+##### installModule
 工具方法，注册格式化后的数据，具体表现为: （注册）
   ```js
   /**
@@ -542,15 +534,15 @@ if (this.strict) {
   }
   ```
 
-#### ModuleCollection 类结构
-##### constructor 构造函数
+### ModuleCollection 类结构
+#### constructor 构造函数
   ```js
   class ModuleCollection{
     constructor(options) {
       this.register([], options);
     }
   ```
-##### register 实例方法
+#### register 实例方法
 ```js
 // rootModule: 为当前模块下的 StoreOption
     register(path, rootModuleOption) {
@@ -576,9 +568,9 @@ if (this.strict) {
   }
   ```
 
-#### helpers.js
+### helpers.js
 帮助文件中的四个函数都是通过接受对应要映射为对象的参数名，直接供组件内部使用。
-##### mapState 
+#### mapState 
   ```js
   export const mapState = (options) => {
     let obj = Object.create(null);
@@ -606,7 +598,7 @@ if (this.strict) {
       - **Array[string]**, 如：[ 'count', 'list' ] 
       - **Object**, key 值为状态名，value 可以是 **string**, **arrow function**, **normal function**，其中常规函数，可以在内部访问到当前组件实例
 
-##### mapGetters
+#### mapGetters
 ```js
   export function mapGetters(namespace, options) {
     let obj = Object.create(null);
@@ -626,7 +618,7 @@ if (this.strict) {
   }
   ```
 
-##### mapMutations
+#### mapMutations
   ```js
   export function mapMutations(namespace, options) {
     let obj = Object.create(null);
@@ -645,7 +637,7 @@ if (this.strict) {
   }
   ```
   
-##### mapActions
+#### mapActions
   ```js
   export function mapActions(namespace, options) {
     let obj = Object.create(null);
@@ -668,10 +660,10 @@ if (this.strict) {
 > 参数1可选值，为子状态模块的命名空间
     参数2为选项属性，类型同 mapState
 
-#### 工具函数
-##### foreach 
+### 工具函数
+#### foreach 
 处理对象键值对迭代函数处理
-##### getState
+#### getState
 同步用户调用 replaceState 后，状态内部的新状态
   ```js
   const foreach = (obj, callback) => Object.entries(obj).forEach(([key, value]) => callback(key, value));
