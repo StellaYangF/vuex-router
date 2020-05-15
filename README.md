@@ -13,7 +13,7 @@ Vuex 是一个专为 Vue.js 应用程序开发的状态管理模式。它采用�
 multiple components that share a common state:
 多组件共享状态
 如下图：
-![vuex](https://vuex.vuejs.org/vuex.png)
+![vuex](https://user-gold-cdn.xitu.io/2020/5/11/17203fa2d48a2ba5?w=701&h=551&f=png&s=8112)
 
 - 可追踪状态改变
 - 可维护
@@ -41,12 +41,15 @@ Vue.use(Vuex)
 > Tip: 这里 Vue 是在进行订阅，Vuex.install 函数，根组件在实例化时，会自动派发执行 install 方法，并将 Vue 作为参数传入。
 
 导出 Store 实例，传入属性对象，可包含以下属性：
- **state**: 根状态
- **getters**: 依赖状态计算出派生状态
- **mutations**: 通过 **commit** 改变状态的唯一方式，使得状态变化可追踪，传入 payload 作为第二参数
- **actions**: 类似于 **mutation**，内部执行 **commit**，异步请求和操作放这里执行，外部触发调用 **dispatch** 方法，传入 payload 作为第二个参数
- **modules**: 子模块状态
- **namespaced**: 字模块设置命名空间
+ - **state**: 根状态
+ - **getters**: 依赖状态计算出派生状态
+ - **mutations**: 通过 commit
+ - **commit** 改变状态的唯一方式，使得状态变化可追踪，传入 payload 作为第二参数
+ - **actions**: 类似于 **mutation**，内部执行 **commit**，异步请求和操作放这里执行，外部触发调用 dispatch
+ - **dispatch** 方法，传入 payload 作为第二个参数
+ - **modules**: 子模块状态
+ - **namespaced**: 字模块设置命名空间
+ - **strict**: 严格模式
 ```js
 export default new Vuex.Store({
   state: {
@@ -313,6 +316,8 @@ export declare class Store<S> {
     this.actions = Object.create(null);
     this.subs = [];
   ```
+  > Tip: **this.vm** 是核心，实现状态响应式，一旦发生改变，依赖的组件视图就会立即更新。
+
 #### getters 
 类型为 GetterTree 调用 **Object.create(null)** 创建一个干净的对象，即原型链指向 null，没有原型对象的方法和属性，提高性能
   ```ts
@@ -671,7 +676,4 @@ if (this.strict) {
   ```
 
 至此， vuex 源码的个人分析基本完结，因为是**简版**与源码会有一定的出入。
-
-<span style="color: tomato;">
-  <i class="fas fa-smile"></i>
-</span>Feel free to tell me if there is any problem.
+Feel free to tell me if there is any problem.
